@@ -1,22 +1,23 @@
-import { createMiddleware, createServerFn } from "@tanstack/react-start";
+import { runWithStartContext } from "@tanstack/start-storage-context";
 import { expect, test } from "vitest";
-
-export const mid = createMiddleware({ type: "request" }).server(async ({ next }) => {
-  return next();
-});
-
-const x = createServerFn().handler(async () => {
-  return {
-    value: 0,
-  };
-});
+import { x } from "@/lib/serverFn";
 
 test("vitest works", async () => {
   expect(2).toBe(2);
 });
 
 test("test server fn", async () => {
-  const serverFnResult = await x();
+  // Server functions require a Start context to be available in AsyncLocalStorage
+  // This mimics what TanStack Start does during request handling
+  const serverFnResult = await runWithStartContext(
+    {
+      getRouter: () => ({} as any),
+      request: new Request("http://localhost/test"),
+      startOptions: {},
+      contextAfterGlobalMiddlewares: {},
+    },
+    () => x()
+  );
 
   expect(serverFnResult.value).toBe(0);
 });
